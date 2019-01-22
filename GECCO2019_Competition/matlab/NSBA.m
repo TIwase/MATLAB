@@ -74,7 +74,7 @@ seed = 0:max_run-1;
 NP = 100;
 cnt_all = zeros(max_run,5);
 
-for fnc = 5:6
+for fnc = 1:20
 	% DO NOT FORGET
 	initial_flag = 0; % should set the flag to 0 for each run, each function 
 	D = get_dimension(fnc);
