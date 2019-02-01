@@ -74,7 +74,7 @@ seed = 0:max_run-1;
 NP = 100;
 cnt_all = zeros(max_run,5);
 
-for fnc = 1:20
+for fnc = 5:6
 	% DO NOT FORGET
 	initial_flag = 0; % should set the flag to 0 for each run, each function 
 	D = get_dimension(fnc);
@@ -127,7 +127,7 @@ for fnc = 1:20
                     dist(j,:) = norm(dij(j,:));
                     eq(j,:) = dij(j,:)/(dist(j,:)^2);
                 end
-                d(i,:) = sum(eq)/NP;
+                d(i,:) = sum(eq,'omitnan')/NP;
             end
             % popution movement
             for i = 1:NP
