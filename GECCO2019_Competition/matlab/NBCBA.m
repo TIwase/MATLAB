@@ -76,7 +76,7 @@ cnt_all = zeros(max_run,5);
 for fnc = 1:20
 	% DO NOT FORGET
 	initial_flag = 0; % should set the flag to 0 for each run, each function 
-    NP = NP;
+    NP = getNP(fnc);
 	D = get_dimension(fnc);
 	MaxFes = get_maxfes(fnc);
     fgoptima = get_fgoptima(fnc);
