@@ -73,7 +73,7 @@ max_run = 50;
 seed = 0:max_run-1;
 cnt_all = zeros(max_run,5);
 
-for fnc = 1:20
+for fnc = 1:7
 	% DO NOT FORGET
 	initial_flag = 0; % should set the flag to 0 for each run, each function 
     NP = getNP(fnc);
@@ -82,8 +82,10 @@ for fnc = 1:20
     fgoptima = get_fgoptima(fnc);
     x_lb = get_lb(fnc);
     x_ub = get_ub(fnc);
+    dist = sqrt((x_ub - x_lb).^2) / 2;
+    nr = dist / NP^(1/D);
     
-    for run = 1:max_run
+    parfor run = 1:max_run
         % Randomize population within optimization bounds 
         % (here dummy initialization within [0,1] ONLY for DEMO)    
         alpha = 0.9;    % damping coef.
@@ -125,7 +127,8 @@ for fnc = 1:20
                 clstNP = clst(k, 1:length(find(clst(k,:))));
                 clstpop = pop(clstNP,:);
                 clstfit = fitness(clstNP,:);
-                [clstbest, clstID] = max(clstfit);
+                [clstbestCost, clstID] = max(clstfit);
+                clstbest = clstpop(clstID,:);
                 
                 for i = 1:length(clstNP)
                     v(i,:) = v(i,:) + (clstbest - clstpop(i,:)) * f(i,:);
@@ -138,7 +141,6 @@ for fnc = 1:20
                     fitness(clstNP(i),:) = clstfit(i,:);
                 end
             end
-
             % Local search
             Sloc = NaN(NP,D);
             clstloc = NaN(NP,D);
@@ -146,11 +148,12 @@ for fnc = 1:20
                 clstNP = clst(k, 1:length(find(clst(k,:))));
                 clstpop = pop(clstNP,:);
                 clstfit = fitness(clstNP,:);
-                [clstbest, clstID] = max(clstfit);
+                [clstbestCost, clstID] = max(clstfit);
+                clstbest = clstpop(clstID,:);
                 
                 for i = 1:length(clstNP)
                     if rand > r(i)      
-                        clstloc(i,:) = clstpop(i,:) + A(i) * unifrnd(-1,1,[1,D]);
+                        clstloc(i,:) = clstbest + A(i) * unifrnd(-nr, nr, [1,D]);
                         clstloc(i,:) = max(clstloc(i,:),x_lb);
                         clstloc(i,:) = min(clstloc(i,:),x_ub);
                         Sloc(clstNP(i),:) = clstloc(i,:);
@@ -160,9 +163,9 @@ for fnc = 1:20
             % random search
             for k = 1:row
                 clstNP = clst(k, 1:length(find(clst(k,:))));
-                clstpop = pop(clstNP,:);
-                clstfit = fitness(clstNP,:);
-                [clstbest, clstID] = max(clstfit);
+%                 clstpop = pop(clstNP,:);
+%                 clstfit = fitness(clstNP,:);
+%                 [clstbest, clstID] = max(clstfit);
                 
                 for i = 1:length(clstNP)                 
                     Srnd(clstNP(i),:) = unifrnd(x_lb, x_ub, [1,D]);
@@ -177,13 +180,13 @@ for fnc = 1:20
                     pbest(i,:) = pop(i,:);
                     pcost(i,:) = fitness(i,:);
                     
-                    elseif  niching_func(Sloc(i,:),fnc) > pcost(i,:) % & Sloc(i,:)~=[0 0]
+                    elseif  niching_func(Sloc(i,:),fnc) > pcost(i,:)
                     A(i) = alpha * A(i);
                     r(i) = r(i) * norm(1 - exp(-gamma * iter));
                     pbest(i,:) = Sloc(i,:);
                     pcost(i,:) = niching_func(Sloc(i,:),fnc);
                     
-                    elseif  niching_func(Srnd(i,:),fnc) > pcost(i,:)% & Darray(2,1) < min(rdist(i))
+                    elseif  niching_func(Srnd(i,:),fnc) > pcost(i,:)
                     A(i) = alpha * A(i);
                     r(i) = r(i) * norm(1 - exp(-gamma * iter));
                     pbest(i,:) = Srnd(i,:);
@@ -197,6 +200,7 @@ for fnc = 1:20
                     gcost = pcost(i);
                 end
             end
+
             pop = pbest;
             fprintf(['Function:  ' num2str(fnc) '    seed: (' num2str(run) '/' num2str(max_run) ')    The number of Evaluations: (' num2str(iter) '/' num2str(MaxFes) ') \n']);
             fprintf(['gbest = ' num2str(gbest) '\n']);
@@ -283,9 +287,9 @@ end
 soundsc(y, Fs);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function n = getNP(nfnc)
+function n = getNP(nfunc)
 NP = [80*ones(1,5),100,300*ones(1,3),100,200*ones(1,10)];
-n = NP(fnc);
+n = NP(nfunc);
 end
 function [fit] = get_dimension(nfunc)
 Dims = [1 1 1 2 2 2 2 3 3 2 2 2 2 3 3 5 5 10 10 20]; % dimensionality of benchmark functions
@@ -971,18 +975,22 @@ for i = 1:NP
 
     [dist, dsortID] = sort(dist);
     dmin = dist(2); % minimum distance
-    for j = 1:NP
-        if i == j
-            continue;
-        else
-            if fitness(i,:) < fitness(dsortID(j),:)
-                dmin = dist(j,:);
-                break;
-            end
+    flag = 0;
+    
+    for j = 2:NP
+        if fitness(i,:) < fitness(dsortID(j),:)
+            dmin = dist(j,:);
+            flag = 1;
+            break;
         end
     end
-    dominated_point(i,:) = dsortID(j,:);
-    edge(i,:) = dmin;
+    if flag == 1 
+        dominated_point(i,:) = dsortID(j,:);
+        edge(i,:) = dmin;
+    else
+        dominated_point(i,:) = NaN;
+        edge(i,:) = 0;
+    end
 end
 %  Delete redundant edges 
 edge_mean = mean(edge);
@@ -1012,6 +1020,7 @@ for i = 1:NP
     clst = [clst n];
     clst_all(i,:) = [clst, zeros(1, lb_size - length(clst))];
     n = i + 1;
+
 end
 % Delete duplication clusters
 n = 1;
