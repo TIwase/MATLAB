@@ -4,7 +4,7 @@ close all;
 %DO NOT FORGET
 global initial_flag; % the global flag used in test suite 
 
-path = 'C:\Users\TakuyaIwase\Documents\MATLAB\Git\MATLAB\GECCO2019_Competition\matlab\NBCBA\';
+path = 'C:\Users\takadamalab\Documents\MATLAB\GECCO2019_Competition\results\';
 
 if exist([path 'F1'],'dir') == 0
     mkdir([path 'F1']);
@@ -71,7 +71,7 @@ fprintf('---------------------------------------------------------------\n');
 
 max_run = 50;
 seed = 0:max_run-1;
-cnt_all = zeros(max_run,5);
+cnt_all = zeros(max_run, 5);
 
 for fnc = 1:7
 	% DO NOT FORGET
@@ -85,7 +85,7 @@ for fnc = 1:7
     dist = sqrt((x_ub - x_lb).^2) / 2;
     nr = dist / NP^(1/D);
     
-    parfor run = 1:max_run
+    for run = 1:max_run
         % Randomize population within optimization bounds 
         % (here dummy initialization within [0,1] ONLY for DEMO)    
         alpha = 0.9;    % damping coef.
@@ -163,34 +163,63 @@ for fnc = 1:7
             % random search
             for k = 1:row
                 clstNP = clst(k, 1:length(find(clst(k,:))));
-%                 clstpop = pop(clstNP,:);
-%                 clstfit = fitness(clstNP,:);
+                clstpop = pop(clstNP,:);
+                clstfit = fitness(clstNP,:);
 %                 [clstbest, clstID] = max(clstfit);
+
+                if length(clstNP) == 1
+                    continue;
+                end
                 
-                for i = 1:length(clstNP)                 
-                    Srnd(clstNP(i),:) = unifrnd(x_lb, x_ub, [1,D]);
+                dij = zeros(length(clstNP),1);
+                idx = zeros(length(clstNP),1);
+                maxdij = zeros(length(clstNP),1);
+                
+                for i = 1:length(clstNP)
+                    for j = 1:length(clstNP)
+                        dij(j,:) = norm(clstpop(i,:) - clstpop(j,:));
+                    end
+                    [maxdij(i,:), idx(i,:)] = max(dij);                    
+                end
+                
+                maxdist = max(maxdij);
+                range = unique(idx);
+
+                if length(range) == 1
+                    continue;
+                end
+                upper = pop(clstNP(range(1)),:);
+                lower = pop(clstNP(range(2)),:);
+                
+                if contains( num2str(sign(upper - lower)), '-1' ) == 1
+                    upper = pop(clstNP(range(2)),:);
+                    lower = pop(clstNP(range(1)),:);
+                end
+                
+                for i = 1:length(clstNP)
+                    Srnd(clstNP(i),:) = unifrnd(lower, upper, [1,D]);
                 end
             end
             
             for i = 1:NP
                 if  rand < A(i)
                     if fitness(i,:) > pcost(i,:)
-                    A(i) = alpha * A(i);
-                    r(i) = r(i) * norm(1 - exp(-gamma * iter));
-                    pbest(i,:) = pop(i,:);
-                    pcost(i,:) = fitness(i,:);
+                        A(i) = alpha * A(i);
+                        r(i) = r(i) * norm(1 - exp(-gamma * iter));
+                        pbest(i,:) = pop(i,:);
+                        pcost(i,:) = fitness(i,:);
                     
                     elseif  niching_func(Sloc(i,:),fnc) > pcost(i,:)
-                    A(i) = alpha * A(i);
-                    r(i) = r(i) * norm(1 - exp(-gamma * iter));
-                    pbest(i,:) = Sloc(i,:);
-                    pcost(i,:) = niching_func(Sloc(i,:),fnc);
+                        A(i) = alpha * A(i);
+                        r(i) = r(i) * norm(1 - exp(-gamma * iter));
+                        pbest(i,:) = Sloc(i,:);
+                        pcost(i,:) = niching_func(Sloc(i,:),fnc);
                     
                     elseif  niching_func(Srnd(i,:),fnc) > pcost(i,:)
-                    A(i) = alpha * A(i);
-                    r(i) = r(i) * norm(1 - exp(-gamma * iter));
-                    pbest(i,:) = Srnd(i,:);
-                    pcost(i,:) = niching_func(Srnd(i,:),fnc);
+                        A(i) = alpha * A(i);
+                        r(i) = r(i) * norm(1 - exp(-gamma * iter));
+                        pbest(i,:) = Srnd(i,:);
+                        pcost(i,:) = niching_func(Srnd(i,:),fnc);
                     
                     end
                 end     
