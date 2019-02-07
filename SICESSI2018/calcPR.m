@@ -2,10 +2,13 @@ clc;
 clear;
 close all;
 
-path = 'C:\Users\TakuyaIwase\Documents\MATLAB\bat_algorithm\SICESSI\NSBA\';
+path = 'C:\Users\TakuyaIwase\Documents\MATLAB\Git\MATLAB\SICESSI2018\BA\';
 MaxRun = 30;
 
-accuracy = 1.0;
+if exist([path 'results\'],'dir') == 0
+    mkdir([path 'results']);
+end
+accuracy = 0.1;
 % cnt_0 = zeros(MaxRun,1);
 % cnt_1 = zeros(MaxRun,1);
 % cnt_2 = zeros(MaxRun,1);
@@ -101,6 +104,9 @@ for i = 1:length(optima)
         count = count + 1;
         cntID(i,:) = idx(i,:);
         optima_found(k,:) = x(cntID(i),:);
+        k = k + 1;
+    else
+        optima_found(k,:) = NaN(1,2);
         k = k + 1;
     end
 end
