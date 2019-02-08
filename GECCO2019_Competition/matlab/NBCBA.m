@@ -1,10 +1,10 @@
-clc;
-clear;
-close all;
+% clc;
+% clear;
+% close all;
 %DO NOT FORGET
 global initial_flag; % the global flag used in test suite 
 
-path = 'C:\Users\takadamalab\Documents\MATLAB\GECCO2019_Competition\results\';
+path = 'C:\Users\TakuyaIwase\Documents\MATLAB\Git\MATLAB\GECCO2019_Competition\matlab\NBCBA\';
 
 if exist([path 'F1'],'dir') == 0
     mkdir([path 'F1']);
@@ -69,11 +69,11 @@ end
 
 fprintf('---------------------------------------------------------------\n');
 
-max_run = 50;
+max_run = 1;
 seed = 0:max_run-1;
 cnt_all = zeros(max_run, 5);
 
-for fnc = 1:7
+for fnc = 11:12
 	% DO NOT FORGET
 	initial_flag = 0; % should set the flag to 0 for each run, each function 
     NP = getNP(fnc);
@@ -85,6 +85,15 @@ for fnc = 1:7
     dist = sqrt((x_ub - x_lb).^2) / 2;
     nr = dist / NP^(1/D);
     
+%     xx1 = x_lb(1):0.05:x_ub(1);
+%     xx2 = x_lb(2):0.05:x_ub(2);
+%     for j = 1:length(xx1)
+%         for k = 1:length(xx2)
+%             fit(j,k) = niching_func([xx1(j),xx2(k)],fnc);
+%         end
+%         fprintf([num2str(j) '/' num2str(length(xx1)) '\n']);
+%     end
+
     for run = 1:max_run
         % Randomize population within optimization bounds 
         % (here dummy initialization within [0,1] ONLY for DEMO)    
@@ -100,7 +109,7 @@ for fnc = 1:7
         v = zeros(NP,D);
         s = 0;
         pop = zeros(NP,D);
-        Srnd = zeros(NP,D);
+        Srnd = NaN(NP,D);
         fitness = zeros(NP,1);
 
         for i = 1:NP
@@ -116,8 +125,36 @@ for fnc = 1:7
         pcost = fitness;
         [gcost, opt_id] = max(pcost);
         gbest = pop(opt_id,:);
-        
+%         figure;
+%         contour(xx1,xx2,fit,'Fill','on');
+%         hold on;
+%         scatter(pop(:,1),pop(:,2),'r');
+%         grid on;
+%         saveas(gcf, [path 'initialize.png']);
+%         close;
+%         figure;
+%         contour(xx1,xx2,fit,'Fill','on');
+%         hold on;
+%         scatter(pop(:,1),pop(:,2),'r');
+%         grid on;
         for iter = 1:MaxFes
+%             if iter ==100
+%                 figure;
+%                 surfc(xx1,xx2,fit,'FaceColor','interp','FaceLighting','phong','EdgeColor','none');
+%                 xlabel('x2');
+%                 ylabel('x1');
+%                 hold on;
+%                 scatter3(pop(:,2),pop(:,1),fitness(:,1),'r','filled');
+%                 grid on;
+%                 
+%                 figure;
+%                 contour(xx1,xx2,fit.','Fill','on');
+%                 xlabel('x1');
+%                 ylabel('x2');
+%                 hold on;
+%                 scatter(pop(:,1),pop(:,2),'r');
+%                 grid on;
+%             end
             % Divide all individuals into clusters
             clst = calcClst(pop, fitness, NP);
             
@@ -130,9 +167,16 @@ for fnc = 1:7
                 [clstbestCost, clstID] = max(clstfit);
                 clstbest = clstpop(clstID,:);
                 
+%                 figure;
+%                 contour(xx1,xx2,fit,'Fill','on');
+%                 hold on;
+%                 scatter(clstpop(:,1),clstpop(:,2),'r');
+%                 grid on;
+%                 close;
+                
                 for i = 1:length(clstNP)
-                    v(i,:) = v(i,:) + (clstbest - clstpop(i,:)) * f(i,:);
-                    clstpop(i,:) = clstpop(i,:) + v(i,:);
+                    v(clstNP(i),:) = v(clstNP(i),:) + (clstbest - clstpop(i,:)) * f(clstNP(i),:);
+                    clstpop(i,:) = clstpop(i,:) + v(clstNP(i),:);
                     % Apply simple bounds/limits
                     clstpop(i,:) = max(clstpop(i,:),x_lb);
                     clstpop(i,:) = min(clstpop(i,:),x_ub);
@@ -140,31 +184,31 @@ for fnc = 1:7
                     pop(clstNP(i),:) = clstpop(i,:);
                     fitness(clstNP(i),:) = clstfit(i,:);
                 end
-            end
+%             end
             % Local search
             Sloc = NaN(NP,D);
             clstloc = NaN(NP,D);
-            for k = 1:row
-                clstNP = clst(k, 1:length(find(clst(k,:))));
-                clstpop = pop(clstNP,:);
-                clstfit = fitness(clstNP,:);
-                [clstbestCost, clstID] = max(clstfit);
-                clstbest = clstpop(clstID,:);
+%             for k = 1:row
+%                 clstNP = clst(k, 1:length(find(clst(k,:))));
+%                 clstpop = pop(clstNP,:);
+%                 clstfit = fitness(clstNP,:);
+%                 [clstbestCost, clstID] = max(clstfit);
+%                 clstbest = clstpop(clstID,:);
                 
                 for i = 1:length(clstNP)
-                    if rand > r(i)      
-                        clstloc(i,:) = clstbest + A(i) * unifrnd(-nr, nr, [1,D]);
+                    if rand > r(clstNP(i))      
+                        clstloc(i,:) = clstbest + A(clstNP(i)) * unifrnd(-nr, nr, [1,D]);
                         clstloc(i,:) = max(clstloc(i,:),x_lb);
                         clstloc(i,:) = min(clstloc(i,:),x_ub);
                         Sloc(clstNP(i),:) = clstloc(i,:);
                     end
                 end
-            end
+%             end
             % random search
-            for k = 1:row
-                clstNP = clst(k, 1:length(find(clst(k,:))));
-                clstpop = pop(clstNP,:);
-                clstfit = fitness(clstNP,:);
+%             for k = 1:row
+%                 clstNP = clst(k, 1:length(find(clst(k,:))));
+%                 clstpop = pop(clstNP,:);
+%                 clstfit = fitness(clstNP,:);
 %                 [clstbest, clstID] = max(clstfit);
 
                 if length(clstNP) == 1
@@ -186,16 +230,18 @@ for fnc = 1:7
                 range = unique(idx);
 
                 if length(range) == 1
+                    Srnd(clstNP(i,:)) = pbest(clstNP(i),:) + unifrnd(-nr,nr,[1,D]);
                     continue;
                 end
                 upper = pop(clstNP(range(1)),:);
                 lower = pop(clstNP(range(2)),:);
                 
-                if contains( num2str(sign(upper - lower)), '-1' ) == 1
-                    upper = pop(clstNP(range(2)),:);
-                    lower = pop(clstNP(range(1)),:);
+                for m = 1:D
+                    if sign(upper(m) - lower(m)) == -1
+                        upper(m) = pop(clstNP(range(2)),m);
+                        lower(m) = pop(clstNP(range(1)),m);
+                    end
                 end
-                
                 for i = 1:length(clstNP)
                     Srnd(clstNP(i),:) = unifrnd(lower, upper, [1,D]);
                 end
@@ -320,6 +366,7 @@ function n = getNP(nfunc)
 NP = [80*ones(1,5),100,300*ones(1,3),100,200*ones(1,10)];
 n = NP(nfunc);
 end
+
 function [fit] = get_dimension(nfunc)
 Dims = [1 1 1 2 2 2 2 3 3 2 2 2 2 3 3 5 5 10 10 20]; % dimensionality of benchmark functions
 fit = Dims(nfunc);

@@ -4,7 +4,7 @@ close all;
 
 path = 'C:\Users\TakuyaIwase\Documents\MATLAB\Git\MATLAB\SICESSI2018\DNRBA\';
 
-for nfnc = 1:1
+for nfnc = 1:4
     M = csvread([path 'F' num2str(nfnc) '\F' num2str(nfnc) '_15_pbest.csv']);
     pop = M(:,1:2);
     x_lb = getLb(nfnc);
@@ -19,7 +19,7 @@ for nfnc = 1:1
         xlim([x_lb(1) x_ub(1)]);
         ylim([x_lb(2) x_ub(2)]);
         grid on;
-        saveas(gcf,[path 'F' num2str(nfnc) '.png']);
+%         saveas(gcf,[path 'F' num2str(nfnc) '.png']);
         continue;
         
     elseif nfnc == 3
@@ -45,8 +45,8 @@ for nfnc = 1:1
     xlim([x_lb(1) x_ub(1)]);
     ylim([x_lb(2) x_ub(2)]);
     grid on;
-    saveas(gcf,[path 'F' num2str(nfnc) '3.png']);
-%     end
+%     saveas(gcf,[path 'F' num2str(nfnc) '3.png']);
+
 end 
     
 function lb = getLb(fnc)
