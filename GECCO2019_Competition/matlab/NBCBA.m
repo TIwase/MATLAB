@@ -1,10 +1,10 @@
-% clc;
-% clear;
-% close all;
+clc;
+clear;
+close all;
 %DO NOT FORGET
 global initial_flag; % the global flag used in test suite 
 
-path = 'C:\Users\TakuyaIwase\Documents\MATLAB\Git\MATLAB\GECCO2019_Competition\matlab\NBCBA\';
+path = 'C:\Users\takadamalab\Documents\MATLAB\GECCO2019_Competition\results\';
 
 if exist([path 'F1'],'dir') == 0
     mkdir([path 'F1']);
@@ -69,16 +69,17 @@ end
 
 fprintf('---------------------------------------------------------------\n');
 
-max_run = 1;
+max_run = 50;
 seed = 0:max_run-1;
 cnt_all = zeros(max_run, 5);
 
-for fnc = 11:12
+for fnc = 1:10
 	% DO NOT FORGET
 	initial_flag = 0; % should set the flag to 0 for each run, each function 
     NP = getNP(fnc);
 	D = get_dimension(fnc);
 	MaxFes = get_maxfes(fnc);
+    MaxIter = getGen(fnc);
     fgoptima = get_fgoptima(fnc);
     x_lb = get_lb(fnc);
     x_ub = get_ub(fnc);
@@ -93,8 +94,8 @@ for fnc = 11:12
 %         end
 %         fprintf([num2str(j) '/' num2str(length(xx1)) '\n']);
 %     end
-
-    for run = 1:max_run
+    parpool(6);
+    parfor run = 1:max_run
         % Randomize population within optimization bounds 
         % (here dummy initialization within [0,1] ONLY for DEMO)    
         alpha = 0.9;    % damping coef.
@@ -125,6 +126,8 @@ for fnc = 11:12
         pcost = fitness;
         [gcost, opt_id] = max(pcost);
         gbest = pop(opt_id,:);
+        
+        flagCount = 0;
 %         figure;
 %         contour(xx1,xx2,fit,'Fill','on');
 %         hold on;
@@ -137,7 +140,7 @@ for fnc = 11:12
 %         hold on;
 %         scatter(pop(:,1),pop(:,2),'r');
 %         grid on;
-        for iter = 1:MaxFes
+        for iter = 1:MaxIter
 %             if iter ==100
 %                 figure;
 %                 surfc(xx1,xx2,fit,'FaceColor','interp','FaceLighting','phong','EdgeColor','none');
@@ -230,42 +233,48 @@ for fnc = 11:12
                 range = unique(idx);
 
                 if length(range) == 1
-                    Srnd(clstNP(i,:)) = pbest(clstNP(i),:) + unifrnd(-nr,nr,[1,D]);
-                    continue;
-                end
-                upper = pop(clstNP(range(1)),:);
-                lower = pop(clstNP(range(2)),:);
-                
-                for m = 1:D
-                    if sign(upper(m) - lower(m)) == -1
-                        upper(m) = pop(clstNP(range(2)),m);
-                        lower(m) = pop(clstNP(range(1)),m);
+                    Srnd(clstNP(i),:) = pbest(clstNP(i),:) + unifrnd(-nr,nr,[1,D]);
+                    Srnd(clstNP(i),:) = max(Srnd(clstNP(i),:),x_lb);
+                    Srnd(clstNP(i),:) = min(Srnd(clstNP(i),:),x_ub);
+                else
+                    upper = pop(clstNP(range(1)),:);
+                    lower = pop(clstNP(range(2)),:);
+
+                    for m = 1:D
+                        if sign(upper(m) - lower(m)) == -1
+                            upper(m) = pop(clstNP(range(2)),m);
+                            lower(m) = pop(clstNP(range(1)),m);
+                        end
                     end
-                end
-                for i = 1:length(clstNP)
-                    Srnd(clstNP(i),:) = unifrnd(lower, upper, [1,D]);
+                    for i = 1:length(clstNP)
+                        Srnd(clstNP(i),:) = unifrnd(-nr + lower, nr + upper, [1,D]);
+                    end
                 end
             end
             
             for i = 1:NP
+                flag = 0;
                 if  rand < A(i)
                     if fitness(i,:) > pcost(i,:)
                         A(i) = alpha * A(i);
                         r(i) = r(i) * norm(1 - exp(-gamma * iter));
                         pbest(i,:) = pop(i,:);
                         pcost(i,:) = fitness(i,:);
+                        flag = 1;
                     
                     elseif  niching_func(Sloc(i,:),fnc) > pcost(i,:)
                         A(i) = alpha * A(i);
                         r(i) = r(i) * norm(1 - exp(-gamma * iter));
                         pbest(i,:) = Sloc(i,:);
                         pcost(i,:) = niching_func(Sloc(i,:),fnc);
+                        flag = 1;
                     
                     elseif  niching_func(Srnd(i,:),fnc) > pcost(i,:)
                         A(i) = alpha * A(i);
                         r(i) = r(i) * norm(1 - exp(-gamma * iter));
                         pbest(i,:) = Srnd(i,:);
                         pcost(i,:) = niching_func(Srnd(i,:),fnc);
+                        flag = 1;
                     
                     end
                 end     
@@ -274,12 +283,17 @@ for fnc = 11:12
                     gbest = pbest(i,:);
                     gcost = pcost(i);
                 end
+                flagCount = flagCount + flag;
             end
 
             pop = pbest;
             fprintf(['Function:  ' num2str(fnc) '    seed: (' num2str(run) '/' num2str(max_run) ')    The number of Evaluations: (' num2str(iter) '/' num2str(MaxFes) ') \n']);
             fprintf(['gbest = ' num2str(gbest) '\n']);
             fprintf(['gcost = ' num2str(gcost) '\n']); 
+            
+            if flagCount > MaxFes
+                break;
+            end
         end
         % How many global optima have been found?
         acc_1 = 10^(-1);
@@ -358,8 +372,8 @@ for fnc = 11:12
     fprintf(['Wrote output F' num2str(fnc) ' CSV file']);
 end
 % èIóπâπ
-[y, Fs] = audioread('C:\Users\TakuyaIwase\Music\datadelete.mp3');
-soundsc(y, Fs);
+% [y, Fs] = audioread('C:\Users\TakuyaIwase\Music\datadelete.mp3');
+% soundsc(y, Fs);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function n = getNP(nfunc)
@@ -370,6 +384,11 @@ end
 function [fit] = get_dimension(nfunc)
 Dims = [1 1 1 2 2 2 2 3 3 2 2 2 2 3 3 5 5 10 10 20]; % dimensionality of benchmark functions
 fit = Dims(nfunc);
+end
+
+function [fit] = getGen(nfunc)
+Generation = [10000*ones(1,3), 20000*ones(1,2), 60000*ones(1,2), 100000*ones(1,2), 60000*ones(1,4) 100000*ones(1,7)];
+fit = Generation(nfunc);
 end
 
 function [fit] = get_maxfes(nfunc)
