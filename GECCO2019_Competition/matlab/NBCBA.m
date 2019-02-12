@@ -387,7 +387,7 @@ fit = Dims(nfunc);
 end
 
 function [fit] = getGen(nfunc)
-Generation = [10000*ones(1,3), 20000*ones(1,2), 60000*ones(1,2), 100000*ones(1,2), 60000*ones(1,4) 100000*ones(1,7)];
+Generation = [10000*ones(1,3), 40000*ones(1,2), 80000*ones(1,2), 100000*ones(1,2), 80000*ones(1,4) 100000*ones(1,7)];
 fit = Generation(nfunc);
 end
 
