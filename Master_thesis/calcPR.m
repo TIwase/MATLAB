@@ -2,13 +2,16 @@ clc;
 clear;
 close all;
 
-path = 'C:\Users\TakuyaIwase\Documents\MATLAB\Git\MATLAB\SICESSI2018\BA\';
+path = 'C:\Users\TakuyaIwase\Documents\MATLAB\Git\MATLAB\Master_thesis\NSBA\';
 MaxRun = 30;
 
 if exist([path 'results\'],'dir') == 0
     mkdir([path 'results']);
 end
-accuracy = 0.1;
+acc_1 = 0.1;
+acc_2 = 0.01;
+acc_3 = 0.001;
+
 % cnt_0 = zeros(MaxRun,1);
 % cnt_1 = zeros(MaxRun,1);
 % cnt_2 = zeros(MaxRun,1);
@@ -21,21 +24,27 @@ for fnc = 1:4
         M = csvread([path 'F' num2str(fnc) '\F' num2str(fnc) '_' num2str(seed) '_pbest.csv']);
         pop = M(:,1:2);
         
-        [cnt(seed,:), optima_found] = cntOptima(pop, fnc, accuracy);
+        [cnt1(seed,:), optima_found1] = cntOptima(pop, fnc, acc_1);
+        [cnt2(seed,:), optima_found2] = cntOptima(pop, fnc, acc_2);
+        [cnt3(seed,:), optima_found3] = cntOptima(pop, fnc, acc_3);
     end
     
     [optima, len] = getOptima(fnc);
     
-    PRmean = mean(cnt) / len;
-    PRstd = std(cnt) / len;
+    PRmean1 = mean(cnt1) / len;
+    PRstd1 = std(cnt1) / len;
+    PRmean2 = mean(cnt2) / len;
+    PRstd2 = std(cnt2) / len;
+    PRmean3 = mean(cnt3) / len;
+    PRstd3 = std(cnt3) / len;
     
-    PR_all(fnc,:) = [PRmean, PRstd];
+    PR_all(fnc,:) = [PRmean1, PRstd1, PRmean2, PRstd2, PRmean3, PRstd3];
 end
 
 csvwrite([path 'results\PR.csv'], PR_all);
 fprintf('DONE!!!\n');
 
-function fit = funcFit(x, fnc)
+function fit = Fun(x, fnc)
 persistent fname;
 if fnc == 1
     fname = str2func('Griewank');
@@ -95,7 +104,7 @@ k = 1;
 
 for i = 1:length(optima)
     for j = 1:length(x)
-        diff(j,:) = norm( optima(i,:) - x(j,:) );
+        diff(j,:) = norm( Fun(optima(i,:),fnc) - Fun(x(j,:),fnc) );
     end
     
     [minDiff, idx(i,:)] = min(diff);
