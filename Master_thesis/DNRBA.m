@@ -186,17 +186,37 @@ soundsc(y, Fs);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function lb = getLb(fnc)
-Lb_arr = [-10 -10; -2 -1; 0.25 0.25; -5 -5; -10 -10; 0.25 0.25; -10*ones(1,3); 0.25*ones(1,3)];
-lb = Lb_arr(fnc,:);
+D = getDim(fnc);
+if D == 2
+    Lb_arr = [-10 -10; -2 -1; 0.25 0.25; -5 -5; -10 -10; 0.25 0.25];
+    lb = Lb_arr(fnc,:);
+else
+    Lb_arr = [-10*ones(1,D); 0.25*ones(1,D)];
+    if fnc == 7
+        lb = Lb_arr(1,:);
+    elseif fnc == 8
+        lb = Lb_arr(2,:);
+    end
+end
 end
 
 function ub = getUb(fnc)
-Ub_arr = [10 10; 2 1; 4 4; 5 5; 10 10; 10 10; 10*ones(1,3); 10*ones(1,3)];
+D = getDim(fnc);
+if D == 2
+Ub_arr = [10 10; 2 1; 4 4; 5 5; 10 10; 10 10];
 ub = Ub_arr(fnc,:);
+else
+    Ub_arr = [10*ones(1,3); 10*ones(1,3)];
+    if fnc == 7
+        ub = Ub_arr(1,:);
+    elseif fnc == 8
+        ub = Ub_arr(2,:);
+    end
+end
 end
 
 function result = getNP(fnc)
-NP = [100*ones(1,6) 300*ones(1,2)];
+NP = [100*ones(1,6) 200 300];
 result = NP(fnc);
 end
 
